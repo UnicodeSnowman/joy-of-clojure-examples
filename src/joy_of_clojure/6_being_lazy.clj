@@ -79,3 +79,42 @@
   (lazy-seq
     (when (< i limit)
       (cons i (simple-range (inc i) limit)))))
+
+(take 2 (simple-range 0 9)) ; only iterates as many times as it needs, despite the longer range!
+
+; 6.3.4 Employing Infinite Sequences
+
+; eager
+(defn triangle [n]
+  (/ (* n (+ n 1)) 2))
+(map triangle (range 1 11))
+
+; force / delay
+(defn inf-triangles [n]
+  {:head (triangle n)
+   :tail (delay (inf-triangles (inc n)))})
+(defn head [l] (:head l))
+(defn tail [l] (force (:tail l)))
+(def tri-nums (inf-triangles 1))
+(head tri-nums)
+(head (tail tri-nums))j ; involves deferred calculations that occur only on demand
+
+; 6.4 A Lazy Quicksort
+(defn rand-ints [n]
+  (take n (repeatedly #(rand-int n))))
+
+(defn sort-parts [work]
+  (lazy-seq
+    (loop [[part & parts] work]
+      (if-let [[pivot & xs] (seq part)]
+        (let [smaller? #(< % pivot)] ; if-let condition true, recur
+          (recur (list*
+                   (filter smaller? xs)
+                   pivot
+                   (remove smaller? xs)
+                   parts)))
+        (when-let [[x & parts] parts] ; use when-let when there is no else condition
+          (cons x (sort-parts parts))))))) ; we have a correctly sorted element, append it and (lazily) recur
+                                           ; rest of list is held by returned lazy sequence to be used when needed
+
+(sort-parts (list [6 2 7 3 5]))
