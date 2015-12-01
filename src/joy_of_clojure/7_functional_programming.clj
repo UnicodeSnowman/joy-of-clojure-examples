@@ -258,3 +258,19 @@
 
 (min-by :cost [{:cost 29} {:cost 31} {:cost 10}])
 (sorted-set :cost :zzz :abc)
+
+(#(let [[_  y :as something] (first [[1 2 3]])]
+    y))
+
+(disj #{1 2 3} 3)
+
+; long astar algorithm... need to come back to this
+; (defn astar [start-yx step-est cell-costs]
+;   (let [size (count cell-costs)]
+;     (loop [steps 0
+;            routes (vec (replicate size (vec (replicate size nil))))
+;            work-todo (sorted-set [0 start-yx])]
+;       (if (empty? work-todo)
+;         [(peek (peek routes)) :steps steps]
+;         (let [...])))))
+
