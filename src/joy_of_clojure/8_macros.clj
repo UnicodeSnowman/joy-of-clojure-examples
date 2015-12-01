@@ -44,3 +44,36 @@
   (println ``~y)                    ; (joy-of-clojure.8-macros/y)
   (println ``~~y)                   ; (- x)
   (contextual-eval {'x 36} ``~~y))  ; -36
+
+; THE POINT: clojure supports manipulating structures into different
+; executable forms at both runtime and compile time via quoting!
+
+; 8.2 Defining control structures
+
+; w/o syntax quote
+(nnext [true '(prn 1) false '(prn 2)]) ; => (false (prn 2))
+
+(defmacro do-until [& clauses]
+  (when clauses
+    (list 'clojure.core/when (first clauses)
+          (if (next clauses)
+            (second clauses)
+            (throw (IllegalArgumentException.
+                     "do-until requires an even number of forms")))
+          (cons 'do-until (nnext clauses)))))
+
+(do-until
+  true (prn 1)
+  false (prn 2))
+(macroexpand-1 '(do-until true (prn 1) false (prn 2)))
+
+; w/ syntax-quote and unquoting
+(defmacro unless [condition & body]
+  `(if (not ~condition) ; unquoting here...
+     (do ~@body))) ; and here provides "blanks" to be filled
+
+(unless (even? 3) "Now we see it...")
+(unless (even? 2) "Now we don't...")
+(unless false (println "yep!"))
+
+
