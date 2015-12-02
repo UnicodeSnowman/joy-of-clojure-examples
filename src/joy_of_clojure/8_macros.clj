@@ -76,4 +76,58 @@
 (unless (even? 2) "Now we don't...")
 (unless false (println "yep!"))
 
+; 8.3 Macros combining forms
+; used examle of `defn` to create functions with name, doc string,
+; metadata, etc.
 
+; add-watch
+(defmacro def-watched [name & value]
+  `(do
+     (def ~name ~@value)
+     (add-watch (var ~name)
+                :re-bind
+                (fn [~'key ~'r old# new#]
+                  (prn old# " -> " new#)))))
+
+(macroexpand-1 '(def-watched x 2))
+
+(def-watched x (* 12 12))
+(prn x)
+(def x 0)
+
+; 8.4 using macros to change forms
+(declare grok-props grok-attrs)
+
+((comp not vector?) [1 2 3])
+
+(defn handle-things [things]
+  (for [t things]
+    {:tag :thing
+     :attrs (grok-attrs (take-while (comp not vector?) t))
+     :content (if-let [c (grok-props (drop-while (comp not vector?) t))]
+                [c]
+                [])}))
+
+(defmacro domain [name & body]
+  `{:tag :grouping
+    :attrs {:name (str '~name)}
+    :content [~@(handle-things body)]})
+
+(defn grok-attrs [attrs]
+  (into {:name (str (first attrs))}
+        (for [a (rest attrs)]
+          (cond
+            (list? a) [:isa (str (second a))]
+            (string? a) [:comment a]))))
+
+(defn grop-props [props]
+  (when props
+    {:tag :properties
+     :attrs nil
+     :content (apply vector (for [p props]
+                              {:tag
+                               :property
+                               :attrs {:name (str (first p))}
+                               :content nil}))}))
+
+(domain man-vs-monster [1 2 3])
