@@ -120,7 +120,7 @@
             (list? a) [:isa (str (second a))]
             (string? a) [:comment a]))))
 
-(defn grop-props [props]
+(defn grok-props [props]
   (when props
     {:tag :properties
      :attrs nil
@@ -131,3 +131,42 @@
                                :content nil}))}))
 
 (domain man-vs-monster [1 2 3])
+
+; 8.5.1 Anaphora
+; referring  back to an implicitly passed argument, for example
+
+(defmacro awhen [expr & body]
+  `(let [~'it ~expr] ; ~' weirdness... clojure attempts to resolve symbols in current context, resulting in fully qualified symbols,
+     (if ~'it        ; so quoting and then unquoting captures a symbolic name in the body of a macro
+       (do ~@body)))); ... this isn't great though, frowned upon, not "Hygienic"
+
+(awhen [1 2 3] (it 2)) ; referencing array at index 2, i.e. => 3
+
+; 8.6 Using macros to manage resources
+; closing a stream!
+
+(defmacro with-resource [binding close-fn & body]
+  `(let ~binding
+     (try
+       (do ~@body)
+       (finally
+         (~close-fn ~(binding 0))))))
+
+(let [stream (joc-www)]
+  (with-resource [page stream]
+    #(.close %)
+    (.readLine page)))
+
+; 8.7 Macros returning functions
+; auto-adding pre and post condition checks via macro... returns a function
+; => eventual goal:
+(contract doubler [x]
+          (:require
+            (pos? x))
+          (:ensure
+            (= (* 2 x) %)))
+
+(declare collect-bodies)
+(defmacro contract [name & forms]
+  (list* `fn name (collect-bodies forms)))
+
