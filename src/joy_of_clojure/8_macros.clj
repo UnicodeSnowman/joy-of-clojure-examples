@@ -161,12 +161,48 @@
 ; auto-adding pre and post condition checks via macro... returns a function
 ; => eventual goal:
 (contract doubler [x]
-          (:require
+          (require
             (pos? x))
-          (:ensure
+          (ensure
             (= (* 2 x) %)))
 
-(declare collect-bodies)
 (defmacro contract [name & forms]
   (list* `fn name (collect-bodies forms)))
 
+(partition 3 (range 0 50))
+
+(defn collect-bodies [forms]
+  (for [form (partition 3 forms)]
+    (build-contract form)))
+
+(into '[f] [1 2 3 4])
+
+(defn build-contract [c]
+  (let [args (first c)]
+    (list ; create a list of the form ([f x] {:post [(= (* 2 x) %)] :pre [(pos? x)]} (f x))
+      (into '[f] args)
+      (apply merge
+             (for [con (rest c)]
+               (cond (= (first con) 'require)
+                      (assoc {} :pre (vec (rest con)))
+                     (= (first con) 'ensure)
+                      (assoc {} :post (vec (rest con)))
+                     :else (throw (Exception.
+                                    (str "Unknown tag " (first con)))))))
+      (list* 'f args))))
+
+(def doubler-contract
+  (contract doubler [x]
+            (require
+              (pos? x))
+            (ensure
+              (= (* 2 x) %))))
+
+(doubler-contract #(* 2 %) 10)
+
+(def times2 (partial doubler-contract #(* 2 %)))
+(times2 9) ; Woo!
+(times2 -9) ; FAIL!
+
+(def times3 (partial doubler-contract #(* 3 %)))
+(times3 9) ; FAIL!
