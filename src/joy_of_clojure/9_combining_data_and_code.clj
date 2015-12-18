@@ -77,3 +77,61 @@
   FIXO
   (fixo-push [vector value]
     (conj vector value)))
+
+; mixins
+; extend is ALWAYS about a protocol
+(defprotocol StringOps (rev [s]) (upp [s]))
+(def rev-mixin {:rev clojure.string/reverse})
+(def upp-mixin {:upp (fn [this] (.toUpperCase this))})
+(def fully-mixed (merge upp-mixin rev-mixin))
+(extend String StringOps fully-mixed)
+(-> "Works" upp rev)
+
+; can also include protocol implementation inline with defrecord
+(defrecord TreeNode [val l r]
+  FIXO
+  (fixo-push [t v]
+    ...)
+  (fixo-peek [t]
+    ...)
+  (fixo-pop [t]
+    ...))
+
+; for lower level consruct overrides:
+(deftype InfiniteConstant [i]
+  clojure.lang.ISeq
+  (seq [this]
+    (lazy-seq (cons i (seq this)))))
+
+(take 3 (InfiniteConstant. 5))
+
+; 9.4 a fluent builder for chess moves
+
+(defn build-move [& pieces]
+  (apply hash-map pieces))
+
+(build-move :from "e7" :to "e8" :promotion \Q)
+
+(defrecord Move [from to castle? promotion]
+  Object
+  (toString [this]
+    (str "Move " (:from this)
+         " to " (:to this)
+         (if (:castle? this) " castle"
+           (if-let [p (:promotion this)]
+             (str " promote to " p))))))
+
+(str (Move. "e2" "e4" nil nil))
+(str (Move. "e2" "e4" true nil))
+(str (Move. "e2" "e4" nil \Q))
+
+(.println System/out (Move. "e7" "e8" nil \Q))
+
+; applying conditions
+(defn build-move [& {:keys [from to castle? promotion]}]
+  {:pre [from to]}
+  (Move. from to castle? promotion))
+
+(str (build-move :from "e2" :to "e4"))
+(str (build-move :to "e2" :from "e4"))
+(str (build-move :from "e2" :derp "e4"))
