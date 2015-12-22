@@ -1,4 +1,4 @@
-(ns joy-of-clojure.10-mutatation-and-concurrency)
+(ns joy-of-clojure.10-mutation)
 
 ; 10.1 When to use refs
 
